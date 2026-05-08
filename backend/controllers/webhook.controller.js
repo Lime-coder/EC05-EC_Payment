@@ -3,15 +3,34 @@
 
 const CryptoJS = require("crypto-js");
 const { markOrderPaid, markOrderFailed } = require("../services/order.service");
+const Stripe = require('stripe');
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 async function handleStripeWebhook(req, res, next) {
-  try {
-    // TODO: verify Stripe signature using STRIPE_WEBHOOK_SECRET
-    const event = req.body;
+  const sig = req.headers['stripe-signature'];
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+  let event;
+
+  try {
+    // 1. VERIFY THE SIGNATURE
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+  } catch (err) {
+    console.error(`[Stripe Webhook] Signature verification failed: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // 2. PROCESS THE VERIFIED EVENT
+  try {
     if (event.type === "checkout.session.completed") {
-      await markOrderPaid(event.data.object.metadata.orderId);
+      const session = event.data.object;
+      const orderId = session.metadata.orderId;
+
+      await markOrderPaid(orderId);
+      console.log(`\n[Stripe Webhook] Payment successful! Order #${orderId} marked as paid.\n`);
     }
+  
     res.json({ received: true });
   } catch (err) {
     next(err);
