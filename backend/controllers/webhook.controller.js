@@ -71,4 +71,44 @@ async function handleZaloPayWebhook(req, res, next) {
   }
 }
 
-module.exports = { handleStripeWebhook, handleMomoWebhook, handleZaloPayWebhook };
+async function handlePaypalWebhook(req, res, next) {
+  try {
+    console.log("\n=================================");
+    console.log("[PayPal Webhook] Received");
+    console.log("Webhook Data:", req.body);
+    console.log("=================================\n");
+
+    const event = req.body;
+
+    // PAYMENT SUCCESS
+    if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
+      const orderId = event.resource.custom_id;
+
+      console.log("[PayPal] Payment completed!");
+      console.log(`[PayPal] Updated order #${orderId} to PAID\n`);
+
+      await markOrderPaid(orderId);
+    }
+
+    // PAYMENT FAILED
+    else if (event.event_type === "PAYMENT.CAPTURE.DENIED") {
+      const orderId = event.resource.custom_id;
+
+      console.log("[PayPal] Payment failed!");
+      console.log(`[PayPal] Updated order #${orderId} to FAILED\n`);
+
+      await markOrderFailed(orderId);
+    }
+
+    else {
+      console.log(`[PayPal] Event received: ${event.event_type}\n`);
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { handleStripeWebhook, handleMomoWebhook, handleZaloPayWebhook, handlePaypalWebhook };
+
