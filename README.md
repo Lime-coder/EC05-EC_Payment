@@ -40,6 +40,23 @@ npm run dev
 ```
 Runs on http://localhost:4000
 
+## Paypal Sandbox
+## Create .env file
+
+Create file:
+
+```text
+backend/.env
+```
+
+Example:
+
+```env
+PAYPAL_CLIENT_ID=your_client_id
+PAYPAL_CLIENT_SECRET=your_secret
+PORT=3000
+```
+
 ## Payment flow
 1. User fills the checkout form → `POST /api/checkout`
 2. Backend creates an order and returns a `paymentUrl`
