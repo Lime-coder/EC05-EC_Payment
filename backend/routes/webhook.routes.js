@@ -2,12 +2,13 @@
 // Each gateway has its own URL. Verify signatures inside the controller.
 
 const express = require("express");
-const { handleStripeWebhook, handleMomoWebhook, handlePaypalWebhook } = require("../controllers/webhook.controller");
+
+const { handleStripeWebhook, handleMomoWebhook, handleZaloPayWebhook } = require("../controllers/webhook.controller");
 
 const router = express.Router();
 
 router.post("/stripe", handleStripeWebhook);
 router.post("/momo", handleMomoWebhook);
-router.post("/paypal", handlePaypalWebhook);
+router.post("/zalopay", handleZaloPayWebhook);
 
 module.exports = router;

@@ -1,11 +1,18 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, Navigate } from "react-router-dom";
 import Header from "../components/Header";
 import { useLang } from "../context/LanguageContext";
 
 export default function SuccessPage() {
   const [params] = useSearchParams();
   const orderId = params.get("orderId");
+  const status = params.get("status");
   const { t } = useLang();
+
+  // Khi bấm Hủy ở ZaloPay, họ sẽ tự chèn tham số ?status=... (VD: status=-49) vào url redirect
+  // status = 1 là thành công, khác 1 là thất bại/hủy.
+  if (status && status !== "1") {
+    return <Navigate to="/cancel" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-brand-50">
