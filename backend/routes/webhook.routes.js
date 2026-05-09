@@ -7,7 +7,11 @@ const { handleStripeWebhook, handleMomoWebhook, handleZaloPayWebhook, handlePayp
 
 const router = express.Router();
 
-router.post("/stripe", handleStripeWebhook);
+router.post('/stripe', 
+  express.raw({ type: 'application/json' }), 
+  handleStripeWebhook
+);
+
 router.post("/momo", handleMomoWebhook);
 router.post("/zalopay", handleZaloPayWebhook);
 router.post("/paypal", handlePaypalWebhook);
