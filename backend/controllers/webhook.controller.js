@@ -3,6 +3,7 @@
 
 const CryptoJS = require("crypto-js");
 const { markOrderPaid, markOrderFailed } = require("../services/order.service");
+const { verifyWebhookSignature } = require("../services/gateways/momo");
 const Stripe = require('stripe');
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -39,10 +40,30 @@ async function handleStripeWebhook(req, res, next) {
 
 async function handleMomoWebhook(req, res, next) {
   try {
-    // TODO: verify MoMo signature
     const { orderId, resultCode } = req.body;
-    if (resultCode === 0) await markOrderPaid(orderId);
-    else await markOrderFailed(orderId);
+
+    // Xác minh chữ ký từ MoMo để chắc chắn request hợp lệ
+    const isValid = verifyWebhookSignature(req.body);
+    if (!isValid) {
+      return res.status(400).json({ error: "Invalid MoMo signature" });
+    }
+
+    if (resultCode === 0) {
+      await markOrderPaid(orderId);
+      console.log(`\n[MoMo Webhook] Giao dịch thành công!`);
+      console.log(`  orderId    : ${orderId}`);
+      console.log(`  resultCode : ${resultCode} (thành công)`);
+      console.log(`  transId    : ${req.body.transId}`);
+      console.log(`  amount     : ${req.body.amount} VND\n`);
+    } else {
+      await markOrderFailed(orderId);
+      console.log(`\n[MoMo Webhook] Giao dịch THẤT BẠI`);
+      console.log(`  orderId    : ${orderId}`);
+      console.log(`  resultCode : ${resultCode}`);
+      console.log(`  message    : ${req.body.message}\n`);
+    }
+
+    // MoMo yêu cầu response 200 để xác nhận đã nhận webhook
     res.json({ received: true });
   } catch (err) {
     next(err);
@@ -90,4 +111,44 @@ async function handleZaloPayWebhook(req, res, next) {
   }
 }
 
-module.exports = { handleStripeWebhook, handleMomoWebhook, handleZaloPayWebhook };
+async function handlePaypalWebhook(req, res, next) {
+  try {
+    console.log("\n=================================");
+    console.log("[PayPal Webhook] Received");
+    console.log("Webhook Data:", req.body);
+    console.log("=================================\n");
+
+    const event = req.body;
+
+    // PAYMENT SUCCESS
+    if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
+      const orderId = event.resource.custom_id;
+
+      console.log("[PayPal] Payment completed!");
+      console.log(`[PayPal] Updated order #${orderId} to PAID\n`);
+
+      await markOrderPaid(orderId);
+    }
+
+    // PAYMENT FAILED
+    else if (event.event_type === "PAYMENT.CAPTURE.DENIED") {
+      const orderId = event.resource.custom_id;
+
+      console.log("[PayPal] Payment failed!");
+      console.log(`[PayPal] Updated order #${orderId} to FAILED\n`);
+
+      await markOrderFailed(orderId);
+    }
+
+    else {
+      console.log(`[PayPal] Event received: ${event.event_type}\n`);
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { handleStripeWebhook, handleMomoWebhook, handleZaloPayWebhook, handlePaypalWebhook };
+
