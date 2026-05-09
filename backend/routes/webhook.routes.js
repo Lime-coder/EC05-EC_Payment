@@ -6,8 +6,7 @@ const { handleStripeWebhook, handleMomoWebhook, handleZaloPayWebhook } = require
 
 const router = express.Router();
 
-router.post("/stripe", handleStripeWebhook);
-router.post('/webhook/stripe', 
+router.post('/stripe', 
   express.raw({ type: 'application/json' }), 
   handleStripeWebhook
 );

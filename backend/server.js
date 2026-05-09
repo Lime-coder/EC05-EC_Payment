@@ -12,11 +12,11 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
+app.use("/api/webhook", webhookRoutes);
 app.use(express.json());
 
 // Routes
 app.use("/api/checkout", checkoutRoutes);
-app.use("/api/webhook", webhookRoutes);
 
 app.get("/", (_req, res) => res.send("Movie checkout backend is running"));
 

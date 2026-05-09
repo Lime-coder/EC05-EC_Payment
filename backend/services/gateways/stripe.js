@@ -12,7 +12,7 @@ async function createSession({ orderId, amount }) {
         price_data: {
           currency: 'vnd',
 
-          product_data: {
+          product_data: { 
             name: `Order #${orderId}`,
           },
 
